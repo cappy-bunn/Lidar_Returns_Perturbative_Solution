@@ -272,7 +272,7 @@ W = int_num_W./int_den_W;                           % New DIAL Notes sec. 4
 r2 = 2:size(alphag2,2);
 r1 = r2-1;
 ln_returns = (log((Nr1(r2).*Nr2(r1))./(Nr1(r1).*Nr2(r2))))./rangebin;
-alpha0_b = alphag2(:,1:size(ln_returns,2))+0.5*G1m(:,1:size(ln_returns,2))-0.5*ln_returns;
+alpha0_b = alphag2(:,1:size(ln_returns,2))-0.5*ln_returns;
 alpha0 = [alpha0_b alpha0_b(:,size(alpha0_b,2))];                 % Repeat last row to maintain original matrix size
 % plot(alpha0,rkm,alphag1,rkm)
 
@@ -292,12 +292,8 @@ int_numW_approx = trapz(gi1.*etalonT'.*(f_ls'-1).*Tm_approx'*wl_step);
 int_denW_approx = trapz(gi1.*etalonT'.*Tm_approx'*wl_step);
 W_approx = int_numW_approx./int_denW_approx;  
 
-% Find delta_G1 using G1m and G1_approx:
-delta_G1 = G1_approx-G1m;
-
-
 % First order correction
-delta_alpha1 = 0.5*(delta_G1-alpha0.*W_approx);
+delta_alpha1 = 0.5*(G1_approx-alpha0.*W_approx);
 
 rkms = 0.375:0.15:6.1;
 % plot(alpha0,rkms,alphag1',rkm)
@@ -306,4 +302,19 @@ rkms = 0.375:0.15:6.1;
 rkm2 = rkms(:,1:38);
 % plot(ln_returns,rkm2,DIAL_exact,rkm)
 
+% SECOND
+% Calculate next order term of Tm (Tm_approx_1) from delta_alpha1, then find delta_W_approx and
+% delta_G1_approx.
+optdepth_approx_1 = OpticalDepth(delta_alpha1'.*f_ls,rangebin);
+Tm_approx_1 = optdepth_approx_1.*Tm_approx;
 
+int_numW_approx_1 = trapz(gi1.*etalonT'.*(f_ls'-1).*Tm_approx_1'*wl_step);
+delta_W_approx = -int_numW_approx_1./int_denW_approx;
+
+int_numG1_approx_1 = trapz(dgi1_dr.*etalonT'.*Tm_approx_1');
+delta_G1_approx = -int_numG1_approx_1./int_denG1_approx;
+
+delta_alpha2 = 0.5*(delta_G1_approx - delta_alpha1.*W_approx - alpha0.*delta_W_approx);
+
+% plot(alpha0+delta_alpha1+delta_alpha2,rkms,alphag1',rkm)
+% plot(alpha0+delta_alpha1,rkms,alphag1',rkm)
